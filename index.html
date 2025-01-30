@@ -150,7 +150,9 @@ special_cases: {
 'queijo': 'kay-zho',
 'carro': 'kah-ho',
 'coração': 'koh-rah-sown',
-'vocês': 'voh-sehs'
+'vocês': 'voh-sehs',
+'você': 'voh-seh',
+'que': 'ki'
 }
 }
 };
@@ -168,7 +170,9 @@ document.getElementById('outputText').innerHTML = `<strong>${output}</strong>`;
 function portuguese_to_english_pronunciation(text) {
 const config = pronunciationModes.standard;
 text = text.toLowerCase();
-text = text.replace(/c(?=[ei])/gi, 'ss'); // Ajuste do "c" antes de "e" ou "i"
+text = text.replace(/c(?=[eiéíèìëï])/gi, 'ss') // "c" before "e" or "i"
+           .replace(/c(?=[aouáóúàòùäöü])/gi, 'k'); // "c" before "a", "o", "u" or accented vowels
+
 for (let key in config.special_cases) {
 text = text.replace(new RegExp(`\\b${key}\\b`, 'gi'), config.special_cases[key]);
 }
