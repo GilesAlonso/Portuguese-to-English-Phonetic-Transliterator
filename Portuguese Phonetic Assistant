@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portuguese Phonetic Assistant</title>
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --background-color: white;
+            --text-color: #333;
+        }
+
+        [data-theme="dark"] {
+            --primary-color: #ecf0f1;
+            --secondary-color: #1abc9c;
+            --background-color: #2c3e50;
+            --text-color: #ecf0f1;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 20px;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            transition: all 0.3s ease;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 15px;
+            margin: 10px 0;
+            border: 2px solid var(--secondary-color);
+            border-radius: 8px;
+            resize: vertical;
+            background-color: var(--background-color);
+            color: var(--text-color);
+        }
+
+        .result-box {
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 8px;
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+
+        .history-section {
+            margin-top: 2rem;
+        }
+
+        .examples {
+            margin: 1rem 0;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+        }
+
+        @media (max-width: 600px) {
+            .header {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Portuguese Phonetic Assistant 🇵🇹➔🇬🇧</h1>
+            <button class="theme-toggle" onclick="toggleTheme()">🌓 Toggle Theme</button>
+        </div>
+
+        <div class="controls">
+            <select id="modeSelect" onchange="updateMode()">
+                <option value="standard">Standard Pronunciation</option>
+                <option value="informal">Casual Speech</option>
+                <option value="beginner">Beginner Friendly</option>
+            </select>
+            <button onclick="transliterate()">Transliterate</button>
+            <button onclick="clearAll()">Clear</button>
+        </div>
+
+        <div class="examples">
+            <select id="sampleSelect" onchange="loadSample(this.value)">
+                <option value="">Load Sample Phrases...</option>
+                <option value="hello">Common Greetings</option>
+                <option value="food">Food & Dining</option>
+                <option value="travel">Travel Phrases</option>
+            </select>
+        </div>
+
+        <textarea id="inputText" placeholder="Enter Portuguese text here..."></textarea>
+        
+        <div class="result-box">
+            <h3>Phonetic Translation:</h3>
+            <div id="outputText"></div>
+            <div id="additionalInfo"></div>
+        </div>
+
+        <div class="history-section">
+            <h3>History (Last 5):</h3>
+            <div id="history"></div>
+        </div>
+    </div>
+
+    <script>
+        const pronunciationModes = {
+            standard: {
+                phonetic_mapping: {
+                    'a': 'ah', 'á': 'AH', 'ã': 'ow', 'â': 'ow',
+                    'e': 'eh', 'é': 'EH', 'ê': 'eh',
+                    'i': 'ee', 'í': 'EE',
+                    'o': 'oh', 'ó': 'OH', 'ô': 'oh', 'õ': 'own',
+                    'u': 'oo', 'ú': 'OO',
+                    'b': 'b', 'c': 'k', 'ç': 's', 'd': 'd', 'f': 'f',
+                    'g': 'g', 'h': '', 'j': 'zh', 'k': 'k', 'l': 'l',
+                    'm': 'm', 'n': 'n', 'p': 'p', 'q': 'k', 'r': 'h',
+                    'rr': 'hh', 's': 's', 't': 't', 'v': 'v', 'w': 'w', 
+                    'x': 'sh', 'y': 'ee', 'z': 'z',
+                    'lh': 'ly', 'nh': 'ny', 'ch': 'sh', 'ç': 's',
+                    'ão': 'owng', 'dr': 'dree', 'tr': 'tree',
+                    'gu': 'g', 'qu': 'k', 'ss': 's', 'sc': 's'
+                },
+                diphthongs: {
+                    'ai': 'eye', 'ei': 'ay', 'oi': 'oy', 'ui': 'wee',
+                    'au': 'ow', 'eu': 'eh-oo', 'iu': 'ee-oo',
+                    'ou': 'oh-oo', 'ãe': 'owng-eh'
+                },
+                special_cases: {
+                    'lula': 'LOO-lah',
+                    'ladrão': 'lah-DROWNG',
+                    'é': 'EH',
+                    'um': 'oon',
+                    'três': 'TREHS',
+                    'drão': 'DREE-owng',
+                    'ção': 'SOWNG',
+                    'põe': 'POY-eh',
+                    'brasil': 'brah-ZEE-o',
+                    'não': 'NOWNG',
+                    'queijo': 'KAY-zhoo'
+                }
+            },
+            informal: {
+                // Simplified informal pronunciations
+                phonetic_mapping: {
+                    'ão': 'ow', 'r': 'h', 'rr': 'h', 's': 'z'
+                }
+            },
+            beginner: {
+                // Extra phonetic guidance for beginners
+                phonetic_mapping: {
+                    'r': '(roll tongue)', 'rr': '(strong h)',
+                    'lh': '(palatal L)', 'nh': '(ny sound)'
+                }
+            }
+        };
+
+        let currentMode = 'standard';
+        let history = [];
+
+        function updateMode() {
+            currentMode = document.getElementById('modeSelect').value;
+        }
+
+        function transliterate() {
+            const inputText = document.getElementById('inputText').value.trim();
+            if (!inputText) {
+                showAlert('Please enter some text to transliterate!');
+                return;
+            }
+
+            const output = portuguese_to_english_pronunciation(inputText);
+            document.getElementById('outputText').innerHTML = 
+                `<strong>${output}</strong>`;
+            
+            updateHistory(inputText, output);
+            showAdditionalInfo(inputText);
+        }
+
+        function portuguese_to_english_pronunciation(text) {
+            const config = pronunciationModes[currentMode];
+            let result = [];
+            let i = 0;
+            text = text.toLowerCase();
+
+            while (i < text.length) {
+                let replaced = false;
+
+                // Check special cases
+                for (const [key, value] of Object.entries(config.special_cases)) {
+                    if (text.startsWith(key, i)) {
+                        result.push(applyMode(value));
+                        i += key.length;
+                        replaced = true;
+                        break;
+                    }
+                }
+                if (replaced) continue;
+
+                // Check diphthongs
+                if (i + 1 < text.length) {
+                    const twoChar = text.slice(i, i + 2);
+                    if (config.diphthongs[twoChar]) {
+                        result.push(applyMode(config.diphthongs[twoChar]));
+                        i += 2;
+                        replaced = true;
+                    }
+                }
+                if (replaced) continue;
+
+                // Check consonant clusters
+                if (i + 1 < text.length) {
+                    const twoChar = text.slice(i, i + 2);
+                    if (config.phonetic_mapping[twoChar]) {
+                        result.push(applyMode(config.phonetic_mapping[twoChar]));
+                        i += 2;
+                        replaced = true;
+                    }
+                }
+                if (replaced) continue;
+
+                // Single characters
+                const char = text[i];
+                if (config.phonetic_mapping[char]) {
+                    result.push(applyMode(config.phonetic_mapping[char]));
+                } else {
+                    result.push(char);
+                }
+                i++;
+            }
+
+            return result.join(' ');
+        }
+
+        function applyMode(value) {
+            if (currentMode === 'beginner') return value.toUpperCase();
+            return value;
+        }
+
+        function updateHistory(input, output) {
+            history.unshift({input, output, date: new Date()});
+            if (history.length > 5) history.pop();
+            
+            const historyHTML = history.map(entry => 
+                `<div class="history-item">
+                    <small>${entry.date.toLocaleTimeString()}</small><br>
+                    <strong>${entry.input}</strong> → ${entry.output}
+                </div>`
+            ).join('');
+            document.getElementById('history').innerHTML = historyHTML;
+        }
+
+        function showAdditionalInfo(text) {
+            const wordCount = text.split(/\s+/).filter(w => w).length;
+            const info = `Words: ${wordCount} | Characters: ${text.length}`;
+            document.getElementById('additionalInfo').innerHTML = info;
+        }
+
+        function loadSample(type) {
+            const samples = {
+                hello: 'Olá! Como você está? Meu nome é...',
+                food: 'Quero uma cerveja e uma feijoada, por favor.',
+                travel: 'Onde fica o banheiro? Preciso de um táxi!'
+            };
+            if (samples[type]) document.getElementById('inputText').value = samples[type];
+        }
+
+        function clearAll() {
+            document.getElementById('inputText').value = '';
+            document.getElementById('outputText').innerHTML = '';
+            document.getElementById('additionalInfo').innerHTML = '';
+        }
+
+        function toggleTheme() {
+            document.body.setAttribute('data-theme',
+                document.body.getAttribute('data-theme') === 'dark' ? '' : 'dark'
+            );
+        }
+
+        function showAlert(message) {
+            const alert = document.createElement('div');
+            alert.className = 'alert';
+            alert.textContent = message;
+            document.body.appendChild(alert);
+            setTimeout(() => alert.remove(), 2000);
+        }
+    </script>
+</body>
+</html>
