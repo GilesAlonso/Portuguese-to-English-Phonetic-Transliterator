@@ -125,154 +125,52 @@ flex-direction: column;
 const pronunciationModes = {
 standard: {
 phonetic_mapping: {
-'a': 'ah', 'á': 'ah', 'ã': 'ow', 'â': 'ow',
-'e': 'eh', 'é': 'eh', 'ê': 'eh',
+'a': 'ah', 'á': 'ah', 'ã': 'uh', 'â': 'uh',
+'e': 'eh', 'é': 'eh', 'ê': 'ay',
 'i': 'ee', 'í': 'ee',
-'o': 'oh', 'ó': 'oh', 'ô': 'oh', 'õ': 'own',
+'o': 'oh', 'ó': 'oh', 'ô': 'o', 'õ': 'own',
 'u': 'oo', 'ú': 'oo',
 'b': 'b', 'c': 'k', 'ç': 's', 'd': 'd', 'f': 'f',
 'g': 'g', 'h': '', 'j': 'zh', 'k': 'k', 'l': 'l',
-'m': 'm', 'n': 'n', 'p': 'p', 'q': 'k', 'r': 'h',
-'rr': 'hh', 's': 's', 't': 't', 'v': 'v', 'w': 'w',
-'x': 'sh', 'y': 'ee', 'z': 'z',
-'lh': 'ly', 'nh': 'ny', 'ch': 'sh', 'ç': 's',
-'ão': 'owng', 'dr': 'dree', 'tr': 'tree',
+'m': 'm', 'n': 'n', 'p': 'p', 'q': 'k',
+'r': 'ɾ', 'rr': 'h', 's': 's', 't': 't', 'v': 'v',
+'w': 'w', 'x': 'sh', 'y': 'ee', 'z': 'z',
+'lh': 'ly', 'nh': 'ny', 'ch': 'sh',
+'ão': 'oun', 'dr': 'dree', 'tr': 'tree',
 'gu': 'g', 'qu': 'k', 'ss': 's', 'sc': 's'
 },
 diphthongs: {
 'ai': 'eye', 'ei': 'ay', 'oi': 'oy', 'ui': 'wee',
 'au': 'ow', 'eu': 'eh-oo', 'iu': 'ee-oo',
-'ou': 'oh-oo', 'ãe': 'owng-eh'
+'ou': 'oo', 'ãe': 'ine'
 },
 special_cases: {
-'lula': 'loo-lah',
-'ladrão': 'lah-drowng',
-'é': 'eh',
-'um': 'oon',
-'três': 'trehs',
-'drão': 'dree-owng',
-'ção': 'sowng',
-'põe': 'poy-eh',
-'brasil': 'brah-zee-o',
-'não': 'nowng',
-'queijo': 'kay-zhoo'
-}
-},
-informal: {
-phonetic_mapping: {
-'ão': 'ow', 'r': 'h', 'rr': 'h', 's': 'z'
-}
-},
-beginner: {
-phonetic_mapping: {
-'r': '(roll tongue)', 'rr': '(strong h)',
-'lh': '(palatal L)', 'nh': '(ny sound)'
+'brasil': 'brah-zeew',
+'não': 'nown',
+'queijo': 'kay-zho',
+'carro': 'kah-ho',
+'coração': 'koh-rah-sown'
 }
 }
 };
-let currentMode = 'standard';
-let history = [];
-function updateMode() {
-currentMode = document.getElementById('modeSelect').value;
-}
+
 function transliterate() {
 const inputText = document.getElementById('inputText').value.trim();
 if (!inputText) {
-showAlert('Please enter some text to transliterate!');
+alert('Please enter some text to transliterate!');
 return;
 }
 const output = portuguese_to_english_pronunciation(inputText);
-document.getElementById('outputText').innerHTML =
-`<strong>${output}</strong>`;
-updateHistory(inputText, output);
-showAdditionalInfo(inputText);
+document.getElementById('outputText').innerHTML = `<strong>${output}</strong>`;
 }
+
 function portuguese_to_english_pronunciation(text) {
-const config = pronunciationModes[currentMode];
-let result = [];
-let i = 0;
-text = text.toLowerCase().normalize('NFC');
-while (i < text.length) {
-let replaced = false;
-// Check special cases (3+ character sequences first)
-for (const [key, value] of Object.entries(config.special_cases)) {
-if (text.startsWith(key, i)) {
-result.push(value);
-i += key.length;
-replaced = true;
-break;
+const config = pronunciationModes.standard;
+text = text.toLowerCase();
+for (let key in config.special_cases) {
+text = text.replace(new RegExp(`\\b${key}\\b`, 'gi'), config.special_cases[key]);
 }
-}
-if (replaced) continue;
-// Check multi-character sequences (2 characters)
-if (i + 1 < text.length) {
-const twoChar = text.slice(i, i + 2);
-if (config.diphthongs[twoChar]) {
-result.push(config.diphthongs[twoChar]);
-i += 2;
-replaced = true;
-} else if (config.phonetic_mapping[twoChar]) {
-result.push(config.phonetic_mapping[twoChar]);
-i += 2;
-replaced = true;
-}
-}
-if (replaced) continue;
-// Handle single characters with syllable boundaries
-const char = text[i];
-if (config.phonetic_mapping[char]) {
-result.push(config.phonetic_mapping[char]);
-} else {
-result.push(char);
-}
-i++;
-}
-// Clean up hyphenation and spaces
-return result.join('')
-.replace(/-+/g, '-')
-.replace(/- /g, ' ')
-.replace(/(^|-)(.)/g, (_, p1, p2) => p1 + p2.toUpperCase());
-}
-function updateHistory(input, output) {
-history.unshift({input, output, date: new Date()});
-if (history.length > 5) history.pop();
-const historyHTML = history.map(entry =>
-`<div class="history-item">
-<small>${entry.date.toLocaleTimeString()}</small><br>
-<strong>${entry.input}</strong> → ${entry.output}
-</div>`
-).join('');
-document.getElementById('history').innerHTML = historyHTML;
-}
-function showAdditionalInfo(text) {
-const wordCount = text.split(/\s+/).filter(w => w).length;
-const info = `Words: ${wordCount} | Characters: ${text.length}`;
-document.getElementById('additionalInfo').innerHTML = info;
-}
-function loadSample(type) {
-const samples = {
-hello: 'Olá! Como você está? Meu nome é...',
-food: 'Quero uma cerveja e uma feijoada, por favor.',
-travel: 'Onde fica o banheiro? Preciso de um táxi!'
-};
-if (samples[type]) document.getElementById('inputText').value = samples[type];
-}
-function clearAll() {
-document.getElementById('inputText').value = '';
-document.getElementById('outputText').innerHTML = '';
-document.getElementById('additionalInfo').innerHTML = '';
-}
-function toggleTheme() {
-document.body.setAttribute('data-theme',
-document.body.getAttribute('data-theme') === 'dark' ? '' : 'dark'
-);
-}
-function showAlert(message) {
-const alert = document.createElement('div');
-alert.className = 'alert';
-alert.textContent = message;
-document.body.appendChild(alert);
-setTimeout(() => alert.remove(), 2000);
+return text;
 }
 </script>
 </body>
