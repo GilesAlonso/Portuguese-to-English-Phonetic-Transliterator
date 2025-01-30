@@ -130,7 +130,7 @@ phonetic_mapping: {
 'i': 'ee', 'í': 'ee',
 'o': 'oh', 'ó': 'oh', 'ô': 'o', 'õ': 'own',
 'u': 'oo', 'ú': 'oo',
-'b': 'b', 'c': 'k', 'ç': 's', 'd': 'd', 'f': 'f',
+'b': 'b', 'ç': 's', 'd': 'd', 'f': 'f',
 'g': 'g', 'h': '', 'j': 'zh', 'k': 'k', 'l': 'l',
 'm': 'm', 'n': 'n', 'p': 'p', 'q': 'k',
 'r': 'ɾ', 'rr': 'h', 's': 's', 't': 't', 'v': 'v',
@@ -149,7 +149,8 @@ special_cases: {
 'não': 'nown',
 'queijo': 'kay-zho',
 'carro': 'kah-ho',
-'coração': 'koh-rah-sown'
+'coração': 'koh-rah-sown',
+'vocês': 'voh-sehs'
 }
 }
 };
@@ -167,8 +168,15 @@ document.getElementById('outputText').innerHTML = `<strong>${output}</strong>`;
 function portuguese_to_english_pronunciation(text) {
 const config = pronunciationModes.standard;
 text = text.toLowerCase();
+text = text.replace(/c(?=[ei])/gi, 'ss'); // Ajuste do "c" antes de "e" ou "i"
 for (let key in config.special_cases) {
 text = text.replace(new RegExp(`\\b${key}\\b`, 'gi'), config.special_cases[key]);
+}
+for (let key in config.diphthongs) {
+text = text.replace(new RegExp(key, 'gi'), config.diphthongs[key]);
+}
+for (let key in config.phonetic_mapping) {
+text = text.replace(new RegExp(key, 'gi'), config.phonetic_mapping[key]);
 }
 return text;
 }
